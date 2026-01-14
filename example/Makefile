@@ -1,4 +1,4 @@
-.PHONY: build test clean
+.PHONY: build test
 
 PLUGIN_NAME := example-deployer
 
@@ -8,5 +8,3 @@ build:
 test:
 	go test -v ./...
 
-clean:
-	rm -rf $(DIST_DIR)

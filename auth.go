@@ -25,6 +25,7 @@ func Verify(zipPath string, publicKey ed25519.PublicKey) error {
 	if err != nil {
 		return fmt.Errorf("open zip: %w", err)
 	}
+	// nolint:errcheck
 	defer r.Close()
 
 	var (
@@ -43,7 +44,7 @@ func Verify(zipPath string, publicKey ed25519.PublicKey) error {
 				return fmt.Errorf("open signature file: %w", err)
 			}
 			signature, err = io.ReadAll(rc)
-			rc.Close()
+			_ = rc.Close()
 			if err != nil {
 				return fmt.Errorf("read signature file: %w", err)
 			}
@@ -63,7 +64,7 @@ func Verify(zipPath string, publicKey ed25519.PublicKey) error {
 		return fmt.Errorf("open manifest.json: %w", err)
 	}
 	manifestData, err := io.ReadAll(rc)
-	rc.Close()
+	_ = rc.Close()
 	if err != nil {
 		return fmt.Errorf("read manifest.json: %w", err)
 	}
@@ -95,10 +96,10 @@ func Verify(zipPath string, publicKey ed25519.PublicKey) error {
 
 		h := sha256.New()
 		if _, err := io.Copy(h, rc); err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return fmt.Errorf("hash file %s: %w", f.Name, err)
 		}
-		rc.Close()
+		_ = rc.Close()
 
 		actualHash := hex.EncodeToString(h.Sum(nil))
 		if actualHash != expectedHash {

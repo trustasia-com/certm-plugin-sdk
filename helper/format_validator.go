@@ -96,9 +96,6 @@ func validateTime(field Field, value string) error {
 	return nil
 }
 
-// telRegex 电话正则表达式（支持国际格式和国内格式）
-var telRegex = regexp.MustCompile(`^(\+?\d{1,3}[-.\s]?)?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}$`)
-
 // validateTel 验证电话格式
 func validateTel(field Field, value string) error {
 	// 移除空格和特殊字符后验证

@@ -21,6 +21,7 @@ func TestVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// nolint:errcheck
 	defer os.RemoveAll(tmpDir)
 
 	pluginSo := filepath.Join(tmpDir, "plugin.so")
