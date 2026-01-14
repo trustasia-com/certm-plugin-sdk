@@ -23,10 +23,11 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - run: go mod download
       - run: go test -v ./...
-      - run: go build -v ./...
-      - name: Build example
+      - name: Build example plugin
         working-directory: ./example
         run: go build -buildmode=plugin -o example-deployer.so .
       - name: Generate changelog
