@@ -5,12 +5,6 @@ package certm
 
 import "fmt"
 
-// Context 上下文
-type Context struct {
-	Language  string `json:"language"`
-	ProjectID int    `json:"project_id"`
-}
-
 // GetCertContainerList 获取证书容器列表
 func (c *Context) GetCertContainerList() ([]*CertContainerInfo, error) {
 	list, err := call[[]*CertContainerInfo]("db_get_cert_container_list", c.ProjectID)
