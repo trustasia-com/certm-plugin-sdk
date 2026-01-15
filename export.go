@@ -173,14 +173,8 @@ func execute(ctxPtr, configPtr, inputPtr uint32) (ptr uint32) {
 	return
 }
 
-// certmContext 上下文
-type certmContext struct {
-	ProjectID int    `json:"project_id"` // 项目ID
-	Language  string `json:"language"`   // 语言
-}
-
 // GetCertContainerList 获取证书容器列表
-func (c *certmContext) GetCertContainerList(projectID int) ([]*CertContainerInfo, error) {
+func (c *CertmContext) GetCertContainerList(projectID int) ([]*CertContainerInfo, error) {
 	list, err := call[[]*CertContainerInfo]("db_get_cert_container_list", projectID)
 	if err != nil {
 		return nil, err
@@ -189,7 +183,7 @@ func (c *certmContext) GetCertContainerList(projectID int) ([]*CertContainerInfo
 }
 
 // GetCertAssetListOfContainer 获取证书资产列表
-func (c *certmContext) GetCertAssetListOfContainer(projectID, containerID int) ([]*CertAssetInfo, error) {
+func (c *CertmContext) GetCertAssetListOfContainer(projectID, containerID int) ([]*CertAssetInfo, error) {
 	list, err := call[[]*CertAssetInfo]("db_get_cert_asset_list_of_container", projectID, containerID)
 	if err != nil {
 		return nil, err
@@ -198,7 +192,7 @@ func (c *certmContext) GetCertAssetListOfContainer(projectID, containerID int) (
 }
 
 // GetCertAssetDetail 获取证书资产详情
-func (c *certmContext) GetCertAssetDetail(projectID, assetID int) (*CertAssetDetail, error) {
+func (c *CertmContext) GetCertAssetDetail(projectID, assetID int) (*CertAssetDetail, error) {
 	asset, err := call[*CertAssetDetail]("db_get_cert_asset_detail", projectID, assetID)
 	if err != nil {
 		return nil, err
@@ -207,7 +201,7 @@ func (c *certmContext) GetCertAssetDetail(projectID, assetID int) (*CertAssetDet
 }
 
 // GetDeployerList 获取部署器列表
-func (c *certmContext) GetDeployerList(projectID int, targetID string) ([]*DeployerInfo, error) {
+func (c *CertmContext) GetDeployerList(projectID int, targetID string) ([]*DeployerInfo, error) {
 	list, err := call[[]*DeployerInfo]("db_get_deployer_list", projectID, targetID)
 	if err != nil {
 		return nil, err
@@ -216,7 +210,7 @@ func (c *certmContext) GetDeployerList(projectID int, targetID string) ([]*Deplo
 }
 
 // GetDeployerDetail 获取部署器详情
-func (c *certmContext) GetDeployerDetail(projectID, deployerID int) (*DeployerDetail, error) {
+func (c *CertmContext) GetDeployerDetail(projectID, deployerID int) (*DeployerDetail, error) {
 	deployer, err := call[*DeployerDetail]("db_get_deployer_detail", projectID, deployerID)
 	if err != nil {
 		return nil, err
@@ -225,7 +219,7 @@ func (c *certmContext) GetDeployerDetail(projectID, deployerID int) (*DeployerDe
 }
 
 // GetNoticeRuleList 获取告警规则列表
-func (c *certmContext) GetNoticeRuleList() ([]*NoticeRuleInfo, error) {
+func (c *CertmContext) GetNoticeRuleList() ([]*NoticeRuleInfo, error) {
 	list, err := call[[]*NoticeRuleInfo]("db_get_notice_rule_list")
 	if err != nil {
 		return nil, err
@@ -243,23 +237,23 @@ func sprintf(format string, args ...any) string {
 }
 
 // Debug 输出调试日志
-func (c *certmContext) Debug(format string, args ...any) {
+func (c *CertmContext) Debug(format string, args ...any) {
 	hostLogImpl("debug", sprintf(format, args...))
 }
 
 // Error 输出错误日志
-func (c *certmContext) Error(format string, args ...any) {
+func (c *CertmContext) Error(format string, args ...any) {
 	hostLogImpl("error", sprintf(format, args...))
 }
 
 // Info 输出信息日志
-func (c *certmContext) Info(format string, args ...any) {
+func (c *CertmContext) Info(format string, args ...any) {
 	hostLogImpl("info", sprintf(format, args...))
 }
 
 // parseCertmContext 从内存指针解析Context
-func parseCertmContext(ptr uint32) *certmContext {
-	ctx := &certmContext{}
+func parseCertmContext(ptr uint32) *CertmContext {
+	ctx := &CertmContext{}
 
 	if ptr == 0 {
 		return ctx

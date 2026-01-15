@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -28,7 +29,7 @@ func (d *MyDeployer) Info() certm.ComponentInfo {
 }
 
 // GetConfigSchema 返回配置字段
-func (d *MyDeployer) GetConfigSchema(ctx *certm.Context) ([]helper.Field, error) {
+func (d *MyDeployer) GetConfigSchema(ctx context.Context) ([]helper.Field, error) {
 	return []helper.Field{
 		{
 			Type:     helper.FieldTypeString,
@@ -64,7 +65,7 @@ func (d *MyDeployer) GetConfigSchema(ctx *certm.Context) ([]helper.Field, error)
 }
 
 // ValidateConfig 验证配置
-func (d *MyDeployer) ValidateConfig(ctx *certm.Context, config helper.FieldConfig) error {
+func (d *MyDeployer) ValidateConfig(ctx context.Context, config helper.FieldConfig) error {
 	// 示例：验证URL格式
 	if url, ok := config["target_url"].(string); ok {
 		if url == "" {
@@ -75,7 +76,7 @@ func (d *MyDeployer) ValidateConfig(ctx *certm.Context, config helper.FieldConfi
 }
 
 // GetDynamicOptions 获取动态选项
-func (d *MyDeployer) GetDynamicOptions(ctx *certm.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error) {
+func (d *MyDeployer) GetDynamicOptions(ctx context.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error) {
 	// 示例：根据不同字段返回不同选项
 	switch key {
 	case "region":
@@ -90,15 +91,20 @@ func (d *MyDeployer) GetDynamicOptions(ctx *certm.Context, config helper.FieldCo
 }
 
 // Execute 执行部署逻辑
-func (d *MyDeployer) Execute(ctx *certm.Context, config helper.FieldConfig, input []*certm.StepOutput) (*certm.StepOutput, error) {
+func (d *MyDeployer) Execute(ctx context.Context, config helper.FieldConfig, input []*certm.StepOutput) (*certm.StepOutput, error) {
 	// 1. 获取配置
 	targetURL := config.String("target_url")
 	timeout := config.Float("timeout")
 	verifySSL := config.Boolean("verify_ssl")
 
-	ctx.Info("开始部署: target=%s, timeout=%.0f, verifySSL=%v", targetURL, timeout, verifySSL)
+	// 2. 获取DataAccess用于数据查询（如果需要）
+	// dataAccess := certm.GetDataAccess(ctx)
+	// projectID := certm.GetProjectID(ctx)
+	// lang := certm.GetLang(ctx)
 
-	// 2. 获取输入证书数据
+	fmt.Printf("开始部署: target=%s, timeout=%.0f, verifySSL=%v\n", targetURL, timeout, verifySSL)
+
+	// 3. 获取输入证书数据
 	if len(input) == 0 || input[0] == nil {
 		return certm.NewStepOutput(false, nil, certm.DataTypeCertificate, "未找到证书数据")
 	}
@@ -109,12 +115,12 @@ func (d *MyDeployer) Execute(ctx *certm.Context, config helper.FieldConfig, inpu
 		return certm.NewStepOutput(false, nil, certm.DataTypeCertificate, fmt.Sprintf("解析证书数据失败: %v", err))
 	}
 
-	ctx.Info("证书: CN=%s, SHA1=%s", certData.CommonName, certData.SHA1)
+	fmt.Printf("证书: CN=%s, SHA1=%s\n", certData.CommonName, certData.SHA1)
 
-	// 3. 执行部署（示例：可以调用Context提供的方法或HTTP）
+	// 4. 执行部署（示例：可以调用DataAccess提供的方法或HTTP）
 	// 这里演示简单的成功返回
 
-	// 4. 返回成功结果
+	// 5. 返回成功结果
 	deployResult := certm.DeployOutputData{
 		TargetType: "cdn",
 		TargetName: targetURL,

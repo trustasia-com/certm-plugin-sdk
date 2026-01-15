@@ -9,6 +9,12 @@ import (
 	"github.com/trustasia-com/certm-plugin-sdk/helper"
 )
 
+// CertmContext 上下文
+type CertmContext struct {
+	ProjectID int    `json:"project_id"` // 项目ID
+	Language  string `json:"language"`   // 语言
+}
+
 // Component 组件接口，实现的组件必须是无状态的
 type Component interface {
 	Info() ComponentInfo

@@ -39,6 +39,7 @@ go get github.com/trustasia-com/certm-plugin-sdk
 package main
 
 import (
+    "context"
     "encoding/json"
     "fmt"
     certm "github.com/trustasia-com/certm-plugin-sdk"
@@ -58,7 +59,7 @@ func (d *MyDeployer) Info() certm.ComponentInfo {
     }
 }
 
-func (d *MyDeployer) GetConfigSchema(ctx *certm.Context) ([]helper.Field, error) {
+func (d *MyDeployer) GetConfigSchema(ctx context.Context) ([]helper.Field, error) {
     return []helper.Field{
         {
             Type:     helper.FieldTypeString,
@@ -70,20 +71,19 @@ func (d *MyDeployer) GetConfigSchema(ctx *certm.Context) ([]helper.Field, error)
     }, nil
 }
 
-func (d *MyDeployer) ValidateConfig(ctx *certm.Context, config helper.FieldConfig) error {
+func (d *MyDeployer) ValidateConfig(ctx context.Context, config helper.FieldConfig) error {
     if url := config.String("target_url"); url == "" {
         return fmt.Errorf("目标地址不能为空")
     }
     return nil
 }
 
-func (d *MyDeployer) GetDynamicOptions(ctx *certm.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error) {
+func (d *MyDeployer) GetDynamicOptions(ctx context.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error) {
     return nil, nil
 }
 
-func (d *MyDeployer) Execute(ctx *certm.Context, config helper.FieldConfig, input []*certm.StepOutput) (*certm.StepOutput, error) {
+func (d *MyDeployer) Execute(ctx context.Context, config helper.FieldConfig, input []*certm.StepOutput) (*certm.StepOutput, error) {
     targetURL := config.String("target_url")
-    ctx.Info("开始部署到: %s", targetURL)
     
     // 解析证书数据
     var certData certm.CertOutputData
@@ -129,49 +129,55 @@ type Component interface {
     Info() ComponentInfo
     
     // 获取配置字段定义
-    GetConfigSchema(ctx *Context) ([]Field, error)
+    GetConfigSchema(ctx context.Context) ([]Field, error)
     
     // 验证配置
-    ValidateConfig(ctx *Context, config FieldConfig) error
+    ValidateConfig(ctx context.Context, config FieldConfig) error
     
     // 获取动态选项（用于下拉框等）
-    GetDynamicOptions(ctx *Context, config FieldConfig, key string) ([]FieldOption, error)
+    GetDynamicOptions(ctx context.Context, config FieldConfig, key string) ([]FieldOption, error)
     
     // 执行组件逻辑
-    Execute(ctx *Context, config FieldConfig, input []*StepOutput) (*StepOutput, error)
+    Execute(ctx context.Context, config FieldConfig, input []*StepOutput) (*StepOutput, error)
 }
 ```
 
-### Context 上下文
+### Context 使用
 
-#### 1. 日志输出
+所有Component接口方法都接收标准的`context.Context`参数。
+
+#### 1. 获取上下文信息
 
 ```go
-ctx.Info("信息: %s", value)    // 信息日志
-ctx.Error("错误: %v", err)     // 错误日志
-ctx.Debug("调试信息")          // 调试日志
+// 获取当前语言
+lang := certm.GetLang(ctx)  // "zh-CN"
+
+// 获取当前项目ID
+projectID := certm.GetProjectID(ctx)
 ```
 
-#### 2. 数据查询
+#### 2. 数据访问
+
+使用`GetDataAccess`获取数据访问接口：
 
 ```go
-// 证书相关
-containers, err := ctx.GetCertContainerList()
-asset, err := ctx.GetCertAssetDetail(assetID)
+// 获取DataAccess接口
+dataAccess := certm.GetDataAccess(ctx)
+projectID := certm.GetProjectID(ctx)
 
-// 部署器相关
-deployers, err := ctx.GetDeployerList()
-deployer, err := ctx.GetDeployerDetail(deployerID)
+// 查询证书容器
+containers, err := dataAccess.GetCertContainerList(projectID)
 
-// 告警规则
-rules, err := ctx.GetNoticeRuleList()
-```
+// 查询证书资产
+assets, err := dataAccess.GetCertAssetListOfContainer(projectID, containerID)
+asset, err := dataAccess.GetCertAssetDetail(projectID, assetID)
 
-#### 3. 上下文信息
+// 查询部署器
+deployers, err := dataAccess.GetDeployerList(projectID, targetID)
+deployer, err := dataAccess.GetDeployerDetail(projectID, deployerID)
 
-```go
-language := ctx.Language    // 当前语言（如 "zh-CN"）
-projectID := ctx.ProjectID  // 当前项目ID
+// 查询告警规则
+rules, err := dataAccess.GetNoticeRuleList()
 ```
 
 ### 组件类型
@@ -439,11 +445,13 @@ tags := config.StringArray("tags")     // 自动转换为[]string
 A: 在`GetDynamicOptions`中根据配置返回选项：
 
 ```go
-func (d *MyDeployer) GetDynamicOptions(ctx *certm.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error) {
+func (d *MyDeployer) GetDynamicOptions(ctx context.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error) {
     if key == "instance" {
         region := config.String("region")
         // 根据region查询实例列表
-        instances := queryInstancesByRegion(ctx, region)
+        dataAccess := certm.GetDataAccess(ctx)
+        projectID := certm.GetProjectID(ctx)
+        instances := queryInstancesByRegion(dataAccess, projectID, region)
         return instances, nil
     }
     return nil, nil
