@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.2](https://github.com/trustasia-com/certm-plugin-sdk/compare/v0.3.1...v0.3.2) (2026-01-15)
+
+
+### Bug Fixes
+
+* export CertmContext ([e7bc963](https://github.com/trustasia-com/certm-plugin-sdk/commit/e7bc96335f0af4b52828cd73e5740bbed81d87bc))
+
 ### [0.3.1](https://github.com/trustasia-com/certm-plugin-sdk/compare/v0.3.0...v0.3.1) (2026-01-15)
 
 ## [0.3.0](https://github.com/trustasia-com/certm-plugin-sdk/compare/v0.2.0...v0.3.0) (2026-01-15)
