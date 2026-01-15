@@ -3,51 +3,70 @@ name: CI
 on:
   push:
     branches: [ main, master, develop ]
-    tags-ignore: ['v*']  # 排除所有 release tag，避免与 release workflow 冲突
+    tags-ignore: ['v*']
   pull_request:
     branches: [ main, master, develop ]
 
 jobs:
   test:
-    name: Test
+    name: Test & Verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24.11'
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - run: go mod download
-      - run: go test -v -race ./...
+          go-version: '1.21'
+          cache: true
+      
+      - name: Download dependencies
+        run: go mod download
+      
+      - name: Run tests
+        run: go test -v -race ./...
+      
+      - name: Verify modules
+        run: |
+          go mod verify
+          go mod tidy
+          git diff --exit-code go.mod go.sum || \
+            (echo "go.mod or go.sum needs update. Run 'go mod tidy'." && exit 1)
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24.11'
+          go-version: '1.21'
+      
       - uses: golangci/golangci-lint-action@v6
         with:
           version: latest
 
-  verify:
-    name: Verify
+  build-wasm:
+    name: Build WASM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24.11'
-      - run: go mod download
-      - run: go mod verify
-      - run: go mod tidy
-      - run: git diff --exit-code go.mod go.sum || (echo "go.mod or go.sum needs to be updated. Run 'go mod tidy' and commit the changes." && exit 1)
+          go-version: '1.21'
+      
+      - name: Setup TinyGo
+        run: |
+          wget -q https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_amd64.deb
+          sudo dpkg -i tinygo_0.30.0_amd64.deb
+      
+      - name: Build example
+        working-directory: ./example
+        run: tinygo build -o plugin.wasm -target=wasi main.go
+      
+      - name: Check output
+        working-directory: ./example
+        run: |
+          test -f plugin.wasm
+          ls -lh plugin.wasm

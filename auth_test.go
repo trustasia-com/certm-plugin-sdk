@@ -60,7 +60,7 @@ func TestVerify(t *testing.T) {
 
 	// 6. 执行验证
 	t.Run("Valid Signature", func(t *testing.T) {
-		err := Verify(zipPath, pub)
+		err := VerifyZip(zipPath, pub)
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
@@ -84,7 +84,7 @@ func TestVerify(t *testing.T) {
 		_ = w.Close()
 		_ = f.Close()
 
-		err := Verify(badZipPath, pub)
+		err := VerifyZip(badZipPath, pub)
 		if err == nil || err.Error() != "invalid signature" {
 			t.Errorf("expected invalid signature error, got %v", err)
 		}
@@ -106,7 +106,7 @@ func TestVerify(t *testing.T) {
 		_ = w.Close()
 		_ = f.Close()
 
-		err := Verify(tamperedZipPath, pub)
+		err := VerifyZip(tamperedZipPath, pub)
 		if err == nil || !testing.Short() && err.Error() == "" {
 			t.Errorf("expected integrity check failure, got %v", err)
 		}

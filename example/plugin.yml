@@ -1,0 +1,24 @@
+# 基本信息
+id: my-deployer                    # 插件ID（必需，与ComponentInfo.ID一致）
+name: 我的部署器                   # 插件名称（必需）
+version: 1.0.0                     # 版本号（必需，语义化版本）
+description: 部署证书到目标服务器  # 描述（必需）
+type: deploy                       # 组件类型（必需：cert/deploy/check/notice）
+
+# 作者信息
+author:
+  name: John Doe                   # 作者名（必需）
+  email: john@example.com          # 邮箱（可选）
+  url: https://example.com         # 主页（可选）
+
+# 分类和标签
+tags:                              # 标签（可选）
+  - aliyun
+  - ssl
+  - certificate
+  - cloud
+
+# 兼容性
+compatibility:
+  min_version: 1.0.0          # 最小版本（可选）
+  max_version: ">=2.0.0"      # 最大版本要求（可选）

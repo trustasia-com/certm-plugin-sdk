@@ -1,10 +1,8 @@
 module github.com/trustasia-com/certm-plugin-sdk
 
-go 1.24.11
+go 1.24.0
 
-require github.com/trustasia-com/go-van v0.4.20
+toolchain go1.24.11
 
-require (
-	go.opentelemetry.io/otel v1.38.0 // indirect
-	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-)
+// 极简 WASM Plugin SDK - 零外部依赖
+// 仅依赖 Go 标准库

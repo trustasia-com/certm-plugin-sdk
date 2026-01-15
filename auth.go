@@ -17,10 +17,10 @@ type Manifest struct {
 	Timestamp int64             `json:"timestamp"` // 签名时间戳
 }
 
-// Verify 验证插件包签名
+// VerifyZip 验证插件包签名
 // zipPath: ZIP压缩包路径
 // publicKey: 开发者公钥
-func Verify(zipPath string, publicKey ed25519.PublicKey) error {
+func VerifyZip(zipPath string, publicKey ed25519.PublicKey) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return fmt.Errorf("open zip: %w", err)

@@ -3,8 +3,6 @@ package helper
 import (
 	"fmt"
 	"reflect"
-
-	"github.com/trustasia-com/go-van/pkg/logx"
 )
 
 // FieldType 字段类型
@@ -207,13 +205,13 @@ func getValue[T any](f FieldConfig, key string, typeName string) T {
 	var zero T
 	val, ok := f[key]
 	if !ok {
-		logx.Errorf("field %s not found", key)
+		fmt.Printf("[Helper] field %s not found\n", key)
 		return zero
 	}
 
 	result, ok := val.(T)
 	if !ok {
-		logx.Errorf("field %s has invalid type, expected %s, got %T", key, typeName, val)
+		fmt.Printf("[Helper] field %s has invalid type, expected %s, got %T\n", key, typeName, val)
 		return zero
 	}
 	return result
@@ -223,7 +221,7 @@ func getValue[T any](f FieldConfig, key string, typeName string) T {
 func getSliceValue[T any](f FieldConfig, key string, typeName string, converter func(any) (T, bool)) []T {
 	val, ok := f[key]
 	if !ok {
-		logx.Errorf("field %s not found", key)
+		fmt.Printf("[Helper] field %s not found\n", key)
 		return nil
 	}
 
@@ -239,13 +237,13 @@ func getSliceValue[T any](f FieldConfig, key string, typeName string, converter 
 			if converted, ok := converter(item); ok {
 				result = append(result, converted)
 			} else {
-				logx.Errorf("field %s[%d] has invalid type, expected %s, got %T", key, i, typeName, item)
+				fmt.Printf("[Helper] field %s[%d] has invalid type, expected %s, got %T\n", key, i, typeName, item)
 			}
 		}
 		return result
 	}
 
-	logx.Errorf("field %s has invalid type, expected []%s or []any, got %T", key, typeName, val)
+	fmt.Printf("[Helper] field %s has invalid type, expected []%s or []any, got %T\n", key, typeName, val)
 	return nil
 }
 
@@ -293,7 +291,7 @@ func (f FieldConfig) Int(key string) int {
 		return result
 	}
 
-	logx.Errorf("field %s has invalid type, expected numeric, got %T", key, val)
+	fmt.Printf("[Helper] field %s has invalid type, expected numeric, got %T\n", key, val)
 	return 0
 }
 
@@ -303,7 +301,7 @@ func (f FieldConfig) Float(key string) float64 {
 	if result, ok := toFloat(val); ok {
 		return result
 	}
-	logx.Errorf("field %s has invalid type, expected numeric, got %T", key, val)
+	fmt.Printf("[Helper] field %s has invalid type, expected numeric, got %T\n", key, val)
 	return 0
 }
 

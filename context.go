@@ -1,108 +1,90 @@
+//go:build tinygo || wasm
+// +build tinygo wasm
+
 package certm
 
-import (
-	"context"
-	"encoding/json"
-	"time"
-)
+import "fmt"
 
-var (
-	DataAccessCtxKey = "dataAccess"
-	LangCtxKey       = "lang"
-	ProjectCtxKey    = "project"
-)
-
-// DataAccess 组件访问数据接口
-type DataAccess interface {
-	// 证书组件访问接口
-	SelectCertContainerList(projectID int) ([]*CertContainerInfo, error)
-	SelectCertAssetListOfContainer(projectID, containerID int) ([]*CertAssetInfo, error)
-	SelectCertAssetDetail(projectID, assetID int) (*CertAssetDetail, error)
-
-	// 部署组件访问接口
-	SelectDeployerList(projectID int, targetID string) ([]*DeployerInfo, error)
-	SelectDeployerDetail(projectID, deployerID int) (*DeployerDetail, error)
-
-	//
-	// 检测组件访问接口
-
-	// 通知组件访问接口
-	SelectNoticeRuleList() ([]*NoticeRuleInfo, error)
+// Context 上下文
+type Context struct {
+	Language  string `json:"language"`
+	ProjectID int    `json:"project_id"`
 }
 
-// GetDataAccess 获取组件访问数据
-// nolint:errcheck
-func GetDataAccess(ctx context.Context) DataAccess {
-	return ctx.Value(DataAccessCtxKey).(DataAccess)
+// GetCertContainerList 获取证书容器列表
+func (c *Context) GetCertContainerList() ([]*CertContainerInfo, error) {
+	list, err := call[[]*CertContainerInfo]("db_get_cert_container_list", c.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
 }
 
-// GetLang 获取语言
-// nolint:errcheck
-func GetLang(ctx context.Context) string {
-	return ctx.Value(LangCtxKey).(string)
+// GetCertAssetListOfContainer 获取证书资产列表
+func (c *Context) GetCertAssetListOfContainer(containerID int) ([]*CertAssetInfo, error) {
+	list, err := call[[]*CertAssetInfo]("db_get_cert_asset_list_of_container", containerID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
 }
 
-// GetProjectID 获取项目ID
-// nolint:errcheck
-func GetProjectID(ctx context.Context) int {
-	return ctx.Value(ProjectCtxKey).(int)
+// GetCertAssetDetail 获取证书资产详情
+func (c *Context) GetCertAssetDetail(assetID int) (*CertAssetDetail, error) {
+	asset, err := call[*CertAssetDetail]("db_get_cert_asset_detail", assetID)
+	if err != nil {
+		return nil, err
+	}
+	return *asset, nil
 }
 
-// CertContainerInfo 证书容器信息
-type CertContainerInfo struct {
-	ID int `json:"id"`
-
-	Status     string `json:"status"`
-	CommonName string `json:"common_name"`
-	KeyAlgo    string `json:"key_algo"`
-	ExistKey   bool   `json:"exist_key"`
+// GetDeployerList 获取部署器列表
+func (c *Context) GetDeployerList() ([]*DeployerInfo, error) {
+	list, err := call[[]*DeployerInfo]("db_get_deployer_list", c.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
 }
 
-// CertAssetInfo 证书资产信息
-type CertAssetInfo struct {
-	ID int `json:"id"`
-
-	SHA1       string    `json:"sha1"`        // 证书SHA1
-	CommonName string    `json:"common_name"` // 通用名称
-	NotAfter   time.Time `json:"not_after"`   // 过期时间
+// GetDeployerDetail 获取部署器详情
+func (c *Context) GetDeployerDetail(deployerID int) (*DeployerDetail, error) {
+	deployer, err := call[*DeployerDetail]("db_get_deployer_detail", deployerID)
+	if err != nil {
+		return nil, err
+	}
+	return *deployer, nil
 }
 
-// CertAssetDetail 证书资产详情
-type CertAssetDetail struct {
-	CertAssetInfo
-
-	KeyPEM   string   `json:"key_pem"`   // 私钥PEM
-	ChainPEM []string `json:"chain_pem"` // 证书链PEM，包含叶子证书
+// GetNoticeRuleList 获取告警规则列表
+func (c *Context) GetNoticeRuleList() ([]*NoticeRuleInfo, error) {
+	list, err := call[[]*NoticeRuleInfo]("db_get_notice_rule_list", c.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
 }
 
-// NoticeRuleInfo 告警规则信息
-type DeployerInfo struct {
-	ID int `json:"id"`
-
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Remark string `json:"remark"`
+// sprintf 简化的格式化字符串（兼容TinyGo）
+func sprintf(format string, args ...interface{}) string {
+	// 简化版本：如果有参数就用fmt.Sprintf，否则直接返回
+	if len(args) == 0 {
+		return format
+	}
+	return fmt.Sprintf(format, args...)
 }
 
-// DeployerDetail 部署器详情
-type DeployerDetail struct {
-	DeployerInfo
-
-	Credentials json.RawMessage `json:"credentials"`
-	Config      json.RawMessage `json:"config"`
+// Debug 输出调试日志
+func (c *Context) Debug(format string, args ...interface{}) {
+	hostLogImpl("debug", sprintf(format, args...))
 }
 
-// WorkflowStepInfo 工作流步骤信息
-type WorkflowStepInfo struct {
-	ID int `json:"id"`
-
-	Name   string          `json:"name"`
-	Config json.RawMessage `json:"config"`
+// Error 输出错误日志
+func (c *Context) Error(format string, args ...interface{}) {
+	hostLogImpl("error", sprintf(format, args...))
 }
 
-// NoticeRuleInfo 告警规则信息
-type NoticeRuleInfo struct {
-	ID int `json:"id"`
-
-	Name string `json:"name"`
+// Info 输出信息日志
+func (c *Context) Info(format string, args ...interface{}) {
+	hostLogImpl("info", sprintf(format, args...))
 }
