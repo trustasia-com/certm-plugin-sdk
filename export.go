@@ -4,7 +4,9 @@
 package certm
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/trustasia-com/certm-plugin-sdk/helper"
 )
@@ -36,7 +38,8 @@ func getConfigSchema(ctxPtr uint32) (ptr uint32) {
 	}
 
 	// 1. 读取并解析Context
-	ctx := parseContext(ctxPtr)
+	certmCtx := parseCertmContext(ctxPtr)
+	ctx := SetContextKey(context.Background(), certmCtx, certmCtx.Language, certmCtx.ProjectID)
 
 	// 2. 调用组件方法获取Schema
 	fields, err := component.GetConfigSchema(ctx)
@@ -60,16 +63,24 @@ func getDynamicOptions(ctxPtr, configPtr, keyPtr uint32) (ptr uint32) {
 		return
 	}
 
-	// 1. 解析参数
-	ctx := parseContext(ctxPtr)
+	// 1. 读取并解析Context
+	certmCtx := parseCertmContext(ctxPtr)
+	ctx := SetContextKey(context.Background(), certmCtx, certmCtx.Language, certmCtx.ProjectID)
+
+	// 2. 解析参数
 	configData := readFromMemory(configPtr)
 	keyData := readFromMemory(keyPtr)
 
 	var config helper.FieldConfig
-	json.Unmarshal(configData, &config)
+	err := json.Unmarshal(configData, &config)
+	if err != nil {
+		result.Success = false
+		result.Error = err.Error()
+		return
+	}
 	key := string(keyData)
 
-	// 2. 调用组件方法
+	// 3. 调用组件方法
 	options, err := component.GetDynamicOptions(ctx, config, key)
 	if err != nil {
 		result.Success = false
@@ -91,15 +102,23 @@ func validateConfig(ctxPtr, configPtr uint32) (ptr uint32) {
 		return
 	}
 
-	// 1. 解析参数
-	ctx := parseContext(ctxPtr)
+	// 1. 读取并解析Context
+	certmCtx := parseCertmContext(ctxPtr)
+	ctx := SetContextKey(context.Background(), certmCtx, certmCtx.Language, certmCtx.ProjectID)
+
+	// 2. 解析参数
 	configData := readFromMemory(configPtr)
 
 	var config helper.FieldConfig
-	json.Unmarshal(configData, &config)
+	err := json.Unmarshal(configData, &config)
+	if err != nil {
+		result.Success = false
+		result.Error = err.Error()
+		return
+	}
 
-	// 2. 调用验证方法
-	err := component.ValidateConfig(ctx, config)
+	// 3. 调用验证方法
+	err = component.ValidateConfig(ctx, config)
 	if err != nil {
 		result.Success = false
 		result.Error = err.Error()
@@ -119,8 +138,11 @@ func execute(ctxPtr, configPtr, inputPtr uint32) (ptr uint32) {
 		return
 	}
 
-	// 1. 解析参数
-	ctx := parseContext(ctxPtr)
+	// 1. 读取并解析Context
+	certmCtx := parseCertmContext(ctxPtr)
+	ctx := SetContextKey(context.Background(), certmCtx, certmCtx.Language, certmCtx.ProjectID)
+
+	// 2. 解析参数
 	configData := readFromMemory(configPtr)
 	inputData := readFromMemory(inputPtr)
 
@@ -140,7 +162,7 @@ func execute(ctxPtr, configPtr, inputPtr uint32) (ptr uint32) {
 		return
 	}
 
-	// 2. 执行
+	// 3. 执行
 	output, err := component.Execute(ctx, config, input)
 	if err != nil {
 		result.Success = false
@@ -151,9 +173,93 @@ func execute(ctxPtr, configPtr, inputPtr uint32) (ptr uint32) {
 	return
 }
 
-// parseContext 从内存指针解析Context
-func parseContext(ptr uint32) *Context {
-	ctx := &Context{}
+// certmContext 上下文
+type certmContext struct {
+	ProjectID int    `json:"project_id"` // 项目ID
+	Language  string `json:"language"`   // 语言
+}
+
+// GetCertContainerList 获取证书容器列表
+func (c *certmContext) GetCertContainerList(projectID int) ([]*CertContainerInfo, error) {
+	list, err := call[[]*CertContainerInfo]("db_get_cert_container_list", projectID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
+}
+
+// GetCertAssetListOfContainer 获取证书资产列表
+func (c *certmContext) GetCertAssetListOfContainer(projectID, containerID int) ([]*CertAssetInfo, error) {
+	list, err := call[[]*CertAssetInfo]("db_get_cert_asset_list_of_container", projectID, containerID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
+}
+
+// GetCertAssetDetail 获取证书资产详情
+func (c *certmContext) GetCertAssetDetail(projectID, assetID int) (*CertAssetDetail, error) {
+	asset, err := call[*CertAssetDetail]("db_get_cert_asset_detail", projectID, assetID)
+	if err != nil {
+		return nil, err
+	}
+	return *asset, nil
+}
+
+// GetDeployerList 获取部署器列表
+func (c *certmContext) GetDeployerList(projectID int, targetID string) ([]*DeployerInfo, error) {
+	list, err := call[[]*DeployerInfo]("db_get_deployer_list", projectID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
+}
+
+// GetDeployerDetail 获取部署器详情
+func (c *certmContext) GetDeployerDetail(projectID, deployerID int) (*DeployerDetail, error) {
+	deployer, err := call[*DeployerDetail]("db_get_deployer_detail", projectID, deployerID)
+	if err != nil {
+		return nil, err
+	}
+	return *deployer, nil
+}
+
+// GetNoticeRuleList 获取告警规则列表
+func (c *certmContext) GetNoticeRuleList() ([]*NoticeRuleInfo, error) {
+	list, err := call[[]*NoticeRuleInfo]("db_get_notice_rule_list")
+	if err != nil {
+		return nil, err
+	}
+	return *list, nil
+}
+
+// sprintf 简化的格式化字符串（兼容TinyGo）
+func sprintf(format string, args ...any) string {
+	// 简化版本：如果有参数就用fmt.Sprintf，否则直接返回
+	if len(args) == 0 {
+		return format
+	}
+	return fmt.Sprintf(format, args...)
+}
+
+// Debug 输出调试日志
+func (c *certmContext) Debug(format string, args ...any) {
+	hostLogImpl("debug", sprintf(format, args...))
+}
+
+// Error 输出错误日志
+func (c *certmContext) Error(format string, args ...any) {
+	hostLogImpl("error", sprintf(format, args...))
+}
+
+// Info 输出信息日志
+func (c *certmContext) Info(format string, args ...any) {
+	hostLogImpl("info", sprintf(format, args...))
+}
+
+// parseCertmContext 从内存指针解析Context
+func parseCertmContext(ptr uint32) *certmContext {
+	ctx := &certmContext{}
 
 	if ptr == 0 {
 		return ctx

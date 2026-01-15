@@ -1,6 +1,7 @@
 package certm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -8,29 +9,23 @@ import (
 	"github.com/trustasia-com/certm-plugin-sdk/helper"
 )
 
-// Context 上下文
-type Context struct {
-	Language  string `json:"language"`
-	ProjectID int    `json:"project_id"`
-}
-
 // Component 组件接口，实现的组件必须是无状态的
 type Component interface {
 	Info() ComponentInfo
 
 	// GetConfigSchema 获取组件配置Schema
-	GetConfigSchema(ctx *Context) ([]helper.Field, error)
+	GetConfigSchema(ctx context.Context) ([]helper.Field, error)
 	// GetDynamicOptions 获取动态选项
 	// config: 当前配置，可以携带前置值
 	// key: 需要的那个字段的值
-	GetDynamicOptions(ctx *Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error)
+	GetDynamicOptions(ctx context.Context, config helper.FieldConfig, key string) ([]helper.FieldOption, error)
 	// ValidateConfig 验证组件配置是否合法
-	ValidateConfig(ctx *Context, config helper.FieldConfig) error
+	ValidateConfig(ctx context.Context, config helper.FieldConfig) error
 
 	// ctx: 上下文，包含超时控制
 	// config: 组件配置（从 WorkflowStep.ComponentConfig 反序列化）
 	// input: 上一步骤的输出（首个步骤为空，DAG模式下可能是多个输入的合并）
-	Execute(ctx *Context, config helper.FieldConfig, input []*StepOutput) (*StepOutput, error)
+	Execute(ctx context.Context, config helper.FieldConfig, input []*StepOutput) (*StepOutput, error)
 }
 
 // ComponentType 组件类型
@@ -250,65 +245,6 @@ func (s *StepOutput) ParseCheckResult() (*CheckOutputData, error) {
 }
 
 /////////////////////  Host  /////////////////////
-
-// CertContainerInfo 证书容器信息
-type CertContainerInfo struct {
-	ID int `json:"id"`
-
-	Status     string `json:"status"`
-	CommonName string `json:"common_name"`
-	KeyAlgo    string `json:"key_algo"`
-	ExistKey   bool   `json:"exist_key"`
-}
-
-// CertAssetInfo 证书资产信息
-type CertAssetInfo struct {
-	ID int `json:"id"`
-
-	SHA1       string    `json:"sha1"`        // 证书SHA1
-	CommonName string    `json:"common_name"` // 通用名称
-	NotAfter   time.Time `json:"not_after"`   // 过期时间
-}
-
-// CertAssetDetail 证书资产详情
-type CertAssetDetail struct {
-	CertAssetInfo
-
-	KeyPEM   string   `json:"key_pem"`   // 私钥PEM
-	ChainPEM []string `json:"chain_pem"` // 证书链PEM，包含叶子证书
-}
-
-// NoticeRuleInfo 告警规则信息
-type DeployerInfo struct {
-	ID int `json:"id"`
-
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Remark string `json:"remark"`
-}
-
-// DeployerDetail 部署器详情
-type DeployerDetail struct {
-	DeployerInfo
-
-	Credentials json.RawMessage `json:"credentials"`
-	Config      json.RawMessage `json:"config"`
-}
-
-// WorkflowStepInfo 工作流步骤信息
-type WorkflowStepInfo struct {
-	ID int `json:"id"`
-
-	Name   string          `json:"name"`
-	Config json.RawMessage `json:"config"`
-}
-
-// NoticeRuleInfo 告警规则信息
-type NoticeRuleInfo struct {
-	ID int `json:"id"`
-
-	Name string `json:"name"`
-}
 
 // Result 执行结果
 type Result struct {
